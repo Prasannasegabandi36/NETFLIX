@@ -31,7 +31,7 @@ st.markdown("""
 }
 
 .hero h1 {
-    font-size: 58px;
+    font-size: 56px;
     font-weight: 900;
     color: white;
 }
@@ -57,7 +57,7 @@ st.markdown("""
 
 .card h2 {
     color: #E50914;
-    font-size: 36px;
+    font-size: 34px;
     font-weight: 900;
 }
 
@@ -120,6 +120,9 @@ if uploaded_file:
     df = pd.read_csv(uploaded_file)
     df.columns = df.columns.str.strip()
 
+    if "release_year" in df.columns:
+        df["release_year"] = pd.to_numeric(df["release_year"], errors="coerce")
+
     st.sidebar.markdown("### 🔍 Filters")
 
     if "type" in df.columns:
@@ -136,19 +139,37 @@ if uploaded_file:
             "Select Country",
             ["All"] + sorted(countries.tolist())
         )
+
         if selected_country != "All":
             df = df[df["country"].fillna("").str.contains(selected_country, regex=False)]
 
     if "release_year" in df.columns:
-        min_year = int(df["release_year"].min())
-        max_year = int(df["release_year"].max())
-        year_range = st.sidebar.slider(
-            "Select Release Year Range",
-            min_year,
-            max_year,
-            (min_year, max_year)
-        )
-        df = df[(df["release_year"] >= year_range[0]) & (df["release_year"] <= year_range[1])]
+        year_df = df["release_year"].dropna()
+
+        if not year_df.empty:
+            min_year = int(year_df.min())
+            max_year = int(year_df.max())
+
+            if min_year < max_year:
+                year_range = st.sidebar.slider(
+                    "Select Release Year Range",
+                    min_year,
+                    max_year,
+                    (min_year, max_year)
+                )
+
+                df = df[
+                    (df["release_year"] >= year_range[0]) &
+                    (df["release_year"] <= year_range[1])
+                ]
+            else:
+                st.sidebar.info(f"Only one release year available: {min_year}")
+        else:
+            st.sidebar.warning("No release year data available for this filter.")
+
+    if df.empty:
+        st.warning("No data available for selected filters.")
+        st.stop()
 
     total_titles = df.shape[0]
     total_movies = df[df["type"] == "Movie"].shape[0] if "type" in df.columns else 0
@@ -247,33 +268,35 @@ if uploaded_file:
         df["year_added"] = df["date_added"].dt.year
         year_data = df["year_added"].value_counts().sort_index()
 
-        fig = px.area(
-            x=year_data.index,
-            y=year_data.values,
-            title="Content Added Over the Years",
-            labels={"x": "Year", "y": "Number of Titles"}
-        )
+        if not year_data.empty:
+            fig = px.area(
+                x=year_data.index,
+                y=year_data.values,
+                title="Content Added Over the Years",
+                labels={"x": "Year", "y": "Number of Titles"}
+            )
 
-        fig.update_traces(line_color="#E50914", fillcolor="rgba(229,9,20,0.35)")
-        fig = style_chart(fig)
-        st.plotly_chart(fig, use_container_width=True)
+            fig.update_traces(line_color="#E50914", fillcolor="rgba(229,9,20,0.35)")
+            fig = style_chart(fig)
+            st.plotly_chart(fig, use_container_width=True)
 
     st.markdown('<div class="section-title">🎭 Rating Universe</div>', unsafe_allow_html=True)
 
     if "rating" in df.columns:
         rating_data = df["rating"].value_counts().head(10)
 
-        fig = px.bar(
-            x=rating_data.index,
-            y=rating_data.values,
-            title="Top Netflix Ratings",
-            labels={"x": "Rating", "y": "Count"},
-            color=rating_data.values,
-            color_continuous_scale="Reds"
-        )
+        if not rating_data.empty:
+            fig = px.bar(
+                x=rating_data.index,
+                y=rating_data.values,
+                title="Top Netflix Ratings",
+                labels={"x": "Rating", "y": "Count"},
+                color=rating_data.values,
+                color_continuous_scale="Reds"
+            )
 
-        fig = style_chart(fig)
-        st.plotly_chart(fig, use_container_width=True)
+            fig = style_chart(fig)
+            st.plotly_chart(fig, use_container_width=True)
 
     st.markdown('<div class="section-title">🤖 AI Content Clustering</div>', unsafe_allow_html=True)
 
@@ -324,6 +347,9 @@ if uploaded_file:
                 <p>{desc}</p>
             </div>
             """, unsafe_allow_html=True)
+
+    elif "description" in df.columns and len(df) < 5:
+        st.warning("ML clustering needs at least 5 records. Please select broader filters.")
 
     st.markdown('<div class="section-title">📂 Dataset Preview</div>', unsafe_allow_html=True)
     st.dataframe(df.head(20), use_container_width=True)
