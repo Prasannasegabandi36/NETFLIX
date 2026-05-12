@@ -24,10 +24,7 @@ st.markdown("""
 .hero {
     padding: 45px;
     border-radius: 25px;
-    background: linear-gradient(120deg, rgba(229,9,20,0.95), rgba(20,20,20,0.95)),
-                url("https://images.unsplash.com/photo-1489599849927-2ee91cede3ba");
-    background-size: cover;
-    background-position: center;
+    background: linear-gradient(120deg, rgba(229,9,20,0.95), rgba(20,20,20,0.95));
     box-shadow: 0 0 35px rgba(229,9,20,0.45);
     text-align: center;
     margin-bottom: 30px;
@@ -37,12 +34,11 @@ st.markdown("""
     font-size: 58px;
     font-weight: 900;
     color: white;
-    letter-spacing: 2px;
 }
 
 .hero p {
     font-size: 20px;
-    color: #f5f5f5;
+    color: white;
 }
 
 .card {
@@ -55,7 +51,7 @@ st.markdown("""
 }
 
 .card h3 {
-    color: #bbbbbb;
+    color: white;
     font-size: 16px;
 }
 
@@ -68,7 +64,7 @@ st.markdown("""
 .section-title {
     font-size: 30px;
     font-weight: 800;
-    color: #E50914;
+    color: #ff4b4b;
     margin-top: 30px;
     margin-bottom: 15px;
 }
@@ -79,6 +75,7 @@ st.markdown("""
     padding: 18px;
     border-radius: 14px;
     margin-bottom: 12px;
+    color: white;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -90,9 +87,34 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg", width=220)
+st.sidebar.markdown("## 🎬 Netflix Dashboard")
 st.sidebar.markdown("## 🎛️ Control Panel")
 uploaded_file = st.sidebar.file_uploader("Upload Netflix CSV", type=["csv"])
+
+def style_chart(fig):
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color="white",
+        title_font_color="white",
+        legend=dict(
+            font=dict(color="white", size=14),
+            title_font=dict(color="white", size=15)
+        ),
+        xaxis=dict(
+            color="white",
+            title_font=dict(color="white"),
+            tickfont=dict(color="white"),
+            gridcolor="rgba(255,255,255,0.15)"
+        ),
+        yaxis=dict(
+            color="white",
+            title_font=dict(color="white"),
+            tickfont=dict(color="white"),
+            gridcolor="rgba(255,255,255,0.15)"
+        )
+    )
+    return fig
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
@@ -115,7 +137,7 @@ if uploaded_file:
             ["All"] + sorted(countries.tolist())
         )
         if selected_country != "All":
-            df = df[df["country"].fillna("").str.contains(selected_country)]
+            df = df[df["country"].fillna("").str.contains(selected_country, regex=False)]
 
     if "release_year" in df.columns:
         min_year = int(df["release_year"].min())
@@ -155,14 +177,17 @@ if uploaded_file:
             names="Type",
             values="Count",
             hole=0.55,
-            color_discrete_sequence=["#E50914", "#831010"],
+            color_discrete_sequence=["#E50914", "#ff6b6b"],
             title="Movies vs TV Shows"
         )
-        fig.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font_color="white"
+
+        fig.update_traces(
+            textfont_color="white",
+            textfont_size=15,
+            marker=dict(line=dict(color="black", width=2))
         )
+
+        fig = style_chart(fig)
         st.plotly_chart(fig, use_container_width=True)
 
     st.markdown('<div class="section-title">🌍 Global Netflix Presence</div>', unsafe_allow_html=True)
@@ -188,11 +213,8 @@ if uploaded_file:
                 color=country_data.values,
                 color_continuous_scale="Reds"
             )
-            fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font_color="white"
-            )
+
+            fig = style_chart(fig)
             st.plotly_chart(fig, use_container_width=True)
 
     with col2:
@@ -214,11 +236,8 @@ if uploaded_file:
                 color=genre_data.values,
                 color_continuous_scale="Reds"
             )
-            fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font_color="white"
-            )
+
+            fig = style_chart(fig)
             st.plotly_chart(fig, use_container_width=True)
 
     st.markdown('<div class="section-title">📅 Netflix Timeline</div>', unsafe_allow_html=True)
@@ -234,12 +253,9 @@ if uploaded_file:
             title="Content Added Over the Years",
             labels={"x": "Year", "y": "Number of Titles"}
         )
+
         fig.update_traces(line_color="#E50914", fillcolor="rgba(229,9,20,0.35)")
-        fig.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font_color="white"
-        )
+        fig = style_chart(fig)
         st.plotly_chart(fig, use_container_width=True)
 
     st.markdown('<div class="section-title">🎭 Rating Universe</div>', unsafe_allow_html=True)
@@ -255,16 +271,13 @@ if uploaded_file:
             color=rating_data.values,
             color_continuous_scale="Reds"
         )
-        fig.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font_color="white"
-        )
+
+        fig = style_chart(fig)
         st.plotly_chart(fig, use_container_width=True)
 
     st.markdown('<div class="section-title">🤖 AI Content Clustering</div>', unsafe_allow_html=True)
 
-    if "description" in df.columns:
+    if "description" in df.columns and len(df) >= 5:
         ml_df = df.copy()
         ml_df["description"] = ml_df["description"].fillna("")
 
@@ -286,11 +299,8 @@ if uploaded_file:
             color=cluster_data.values,
             color_continuous_scale="Reds"
         )
-        fig.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font_color="white"
-        )
+
+        fig = style_chart(fig)
         st.plotly_chart(fig, use_container_width=True)
 
         selected_cluster = st.selectbox(
