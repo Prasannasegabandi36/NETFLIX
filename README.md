@@ -16,7 +16,7 @@ Along with visual analytics, this project also uses **Machine Learning** to grou
 https://github.com/Prasannasegabandi36/NETFLIX
 
 🌐 **Live Streamlit App:**  
-_Add your Streamlit deployment link here_
+https://netflix-fwsw4khvmvccsmx23bgjdl.streamlit.app/
 
 ---
 
